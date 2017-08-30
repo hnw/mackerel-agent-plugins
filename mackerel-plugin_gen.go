@@ -25,6 +25,7 @@ import (
 	"github.com/mackerelio/mackerel-agent-plugins/mackerel-plugin-graphite/lib"
 	"github.com/mackerelio/mackerel-agent-plugins/mackerel-plugin-haproxy/lib"
 	"github.com/mackerelio/mackerel-agent-plugins/mackerel-plugin-inode/lib"
+	"github.com/mackerelio/mackerel-agent-plugins/mackerel-plugin-iw/lib"
 	"github.com/mackerelio/mackerel-agent-plugins/mackerel-plugin-jmx-jolokia/lib"
 	"github.com/mackerelio/mackerel-agent-plugins/mackerel-plugin-jvm/lib"
 	"github.com/mackerelio/mackerel-agent-plugins/mackerel-plugin-linux/lib"
@@ -101,6 +102,8 @@ func runPlugin(plug string) error {
 		mphaproxy.Do()
 	case "inode":
 		mpinode.Do()
+	case "iw":
+		mpiw.Do()
 	case "jmx-jolokia":
 		mpjmxjolokia.Do()
 	case "jvm":
@@ -189,6 +192,7 @@ var plugins = []string{
 	"graphite",
 	"haproxy",
 	"inode",
+	"iw",
 	"jmx-jolokia",
 	"jvm",
 	"linux",
