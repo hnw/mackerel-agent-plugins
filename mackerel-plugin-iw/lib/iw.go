@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	mp "github.com/hnw/go-mackerel-plugin-helper"
+	"github.com/hnw/wsoui"
 )
 
 // IwPlugin mackerel plugin
@@ -96,14 +97,19 @@ func (p IwPlugin) FetchMetrics() (map[string]interface{}, error) {
 			return nil, err
 		}
 		for macaddr, m := range stats {
-			metrics["client."+macaddr+".connected"] = uint64(1)
+			abbr, _ := wsoui.LookUp(macaddr)
+			readableMac := macaddr
+			if len(abbr) > 0 {
+				readableMac = abbr + "_" + readableMac
+			}
+			metrics["client."+readableMac+".connected"] = uint64(1)
 			cnt++
 			for k, v := range m {
 				if k == "inactiveMsec" {
 					// convert msec to sec
-					metrics["client_inactive_time."+macaddr+".inactiveTime"] = float64(v) / 1000.0
+					metrics["client_inactive_time."+readableMac+".inactiveTime"] = float64(v) / 1000.0
 				} else {
-					metrics["client_transfer_bytes."+macaddr+"."+k] = v
+					metrics["client_transfer_bytes."+readableMac+"."+k] = v
 				}
 			}
 		}
