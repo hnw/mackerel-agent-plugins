@@ -85,16 +85,18 @@ Station 00:00:5e:11:88:2e (on wlan1)
 	connected time:	29035 seconds`
 
 	stats := parseIwDevStationDump(stub)
-	expected := map[string]map[string]uint64{
-		"00-00-5e-f0-07-87": map[string]uint64{
+	expected := map[string]map[string]int64{
+		"00-00-5e-f0-07-87": map[string]int64{
 			"rxBytes":      6216368,
 			"txBytes":      4006367,
 			"inactiveMsec": 1600,
+			"signalDbm":    -50,
 		},
-		"00-00-5e-11-88-2e": map[string]uint64{
+		"00-00-5e-11-88-2e": map[string]int64{
 			"rxBytes":      12219038,
 			"txBytes":      242662420,
 			"inactiveMsec": 8140,
+			"signalDbm":    -65,
 		},
 	}
 	if !reflect.DeepEqual(expected, stats) {

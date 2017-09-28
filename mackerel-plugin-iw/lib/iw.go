@@ -38,6 +38,10 @@ var iwDevStationDumpInactiveTimePattern = regexp.MustCompile(
 	`^\s+inactive time:\s+(\d+)\s+ms`,
 )
 
+var iwDevStationDumpSignalDbmPattern = regexp.MustCompile(
+	`^\s+signal:\s+(-\d+)\s*\[-\d+,\s*-\d+\]\s*dBm`,
+)
+
 // MetricKeyPrefix interface for PluginWithPrefix
 func (p IwPlugin) MetricKeyPrefix() string {
 	if p.prefix == "" {
@@ -78,6 +82,13 @@ func (p IwPlugin) GraphDefinition() map[string]mp.Graphs {
 				{Name: "inactiveTime", Label: "inactiveTime", Imputation: "lastValue"},
 			},
 		},
+		"client_signal_power.#": {
+			Label: "Wi-Fi signal power",
+			Unit:  "float",
+			Metrics: []mp.Metrics{
+				{Name: "signalDbm", Label: "signal (-dBm)"},
+			},
+		},
 	}
 }
 
@@ -108,8 +119,11 @@ func (p IwPlugin) FetchMetrics() (map[string]interface{}, error) {
 				if k == "inactiveMsec" {
 					// convert msec to sec
 					metrics["client_inactive_time."+readableMac+".inactiveTime"] = float64(v) / 1000.0
+				} else if k == "signalDbm" {
+					// negate value
+					metrics["client_signal_power."+readableMac+".signalDbm"] = float64(-v)
 				} else {
-					metrics["client_transfer_bytes."+readableMac+"."+k] = v
+					metrics["client_transfer_bytes."+readableMac+"."+k] = uint64(v)
 				}
 			}
 		}
@@ -151,7 +165,7 @@ func getIwDev() (string, error) {
 }
 
 // Get statistics for specified network interface
-func getInterfaceStats(ifName string) (map[string]map[string]uint64, error) {
+func getInterfaceStats(ifName string) (map[string]map[string]int64, error) {
 	out, err := getIwDevStationDump(ifName)
 	if err != nil {
 		return nil, err
@@ -160,19 +174,21 @@ func getInterfaceStats(ifName string) (map[string]map[string]uint64, error) {
 }
 
 // Parse output from 'iw dev <ifname> station dump'
-func parseIwDevStationDump(out string) map[string]map[string]uint64 {
-	stats := make(map[string]map[string]uint64)
+func parseIwDevStationDump(out string) map[string]map[string]int64 {
+	stats := make(map[string]map[string]int64)
 	macaddr := ""
 	for _, line := range strings.Split(out, "\n") {
 		if matches := iwDevStationDumpHeaderPattern.FindStringSubmatch(line); matches != nil {
 			macaddr = strings.Replace(matches[1], ":", "-", -1)
-			stats[macaddr] = make(map[string]uint64)
+			stats[macaddr] = make(map[string]int64)
 		} else if matches := iwDevStationDumpRxBytesPattern.FindStringSubmatch(line); matches != nil {
-			stats[macaddr]["rxBytes"], _ = strconv.ParseUint(matches[1], 10, 64)
+			stats[macaddr]["rxBytes"], _ = strconv.ParseInt(matches[1], 10, 64)
 		} else if matches := iwDevStationDumpTxBytesPattern.FindStringSubmatch(line); matches != nil {
-			stats[macaddr]["txBytes"], _ = strconv.ParseUint(matches[1], 10, 64)
+			stats[macaddr]["txBytes"], _ = strconv.ParseInt(matches[1], 10, 64)
 		} else if matches := iwDevStationDumpInactiveTimePattern.FindStringSubmatch(line); matches != nil {
-			stats[macaddr]["inactiveMsec"], _ = strconv.ParseUint(matches[1], 10, 64)
+			stats[macaddr]["inactiveMsec"], _ = strconv.ParseInt(matches[1], 10, 64)
+		} else if matches := iwDevStationDumpSignalDbmPattern.FindStringSubmatch(line); matches != nil {
+			stats[macaddr]["signalDbm"], _ = strconv.ParseInt(matches[1], 10, 64)
 		}
 	}
 	return stats
